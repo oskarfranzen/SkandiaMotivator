@@ -6,11 +6,12 @@ import { checkAuth, getSpotifyToken } from "./Spotify/spotifyPlayer";
 window.onSpotifyWebPlaybackSDKReady = () => {
   const token = checkAuth().authToken;
   const player = new Spotify.Player({
-    name: "Web Playback SDK Quick Start Player",
+    name: "Skandia Hackathon player",
     getOAuthToken: cb => {
       cb(token);
     }
   });
+  player.connect();
 };
 
 const App: React.FunctionComponent<any> = () => {
