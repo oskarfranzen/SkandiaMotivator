@@ -23,7 +23,7 @@ export const checkAuth = (): IToken => {
       .split("=")[1]
       .split("&")[0];
   if (authToken !== "") {
-    localStorage.setItem(tokenLocalStorageKey, JSON.stringify({authToken}));
+    localStorage.setItem(tokenLocalStorageKey, JSON.stringify({ authToken }));
   } else {
     window.location.href =
       "https://accounts.spotify.com/authorize?" +
@@ -34,7 +34,7 @@ export const checkAuth = (): IToken => {
       });
     return {} as IToken;
   }
-  return getSpotifyToken();
+  return token;
 };
 
 const encodeQueryData = (data: any) => {
