@@ -8,8 +8,12 @@ import {
   DropdownMenu,
   DropdownToggle,
   Button,
-  Container
+  Container,
+  Row
 } from "reactstrap";
+import ReactSlider from "react-slider";
+import Slider, { Range } from "rc-slider";
+import "rc-slider/assets/index.css";
 
 interface ISelection {
   name: string;
@@ -37,6 +41,8 @@ const App: React.FunctionComponent<any> = () => {
   const [token, setToken] = useState(checkAuth().authToken);
   const [playerReady, setPlayerReady] = useState(false);
   const [playbackState, setPlaybackState] = useState<Spotify.PlaybackState>();
+
+  const [stressLevel, setStressLevel] = useState<number>(0);
 
   const spotifyService = getSpotifyService();
 
@@ -110,17 +116,23 @@ const App: React.FunctionComponent<any> = () => {
       ) : (
         <Button onClick={() => player.pause()}>pause</Button>
       )}
+      <div>
+        <p>Stressnivå</p>
+        <Slider onChange={value => setStressLevel(value)} min={0} max={100} />
+      </div>
       <br />
       <br />
       {selectedTracks.length > 0 &&
-        selectedTracks.map(track => (
-          <>
-            <br />
-            <Button onClick={() => spotifyService.playTracks([track.id])}>
-              {(track && track.name) || "lol"}
-            </Button>
-          </>
-        ))}
+        selectedTracks
+          .filter(filterStressLevel => filterStressLevel.energy > stressLevel)
+          .map(track => (
+            <>
+              <br />
+              <Button onClick={() => spotifyService.playTracks([track.id])}>
+                {(track && track.name) || "lol"}
+              </Button>
+            </>
+          ))}
     </Container>
   );
 };

@@ -44,7 +44,7 @@ export const getSpotifyService = (): ISpotifyService => ({
           tempo: track.tempo,
           danceability: track.danceability,
           loudness: track.loudness,
-          energy: track.energy,
+          energy: track.energy * 100,
           id: track.id
         } as ITrack;
       }
