@@ -3,7 +3,7 @@ import { ITrack } from "../App";
 
 interface ISpotifyService {
   getPlaylists: () => Promise<SpotifyApi.PlaylistObjectSimplified[]>;
-  getPlaylistTracks: (playlistId: string) => Promise<ITrack[]>;
+  getPlaylistsTracks: (playlistId: string[]) => Promise<ITrack[]>;
   playTracks: (trackIds: string[]) => void;
 }
 
@@ -19,36 +19,48 @@ export const getSpotifyService = (): ISpotifyService => ({
       SpotifyApi.PlaylistObjectSimplified
     >).items;
   },
-  getPlaylistTracks: async (playlistId: string) => {
-    const requestUri = `playlists/${playlistId}/tracks`;
+  getPlaylistsTracks: async (playlistId: string[]) => {
+    const listofTracks: ITrack[] = [];
+    let trackResponse: SpotifyApi.AudioFeaturesObject[] = [];
+    let tracks: SpotifyApi.PlaylistTrackObject[] = [];
 
-    const response = await fetch(spotifyBaseUrl + requestUri, requestObject);
+    for (let index in playlistId) {
+      if(tracks.length >= 100) continue;
+      const requestUri = `playlists/${playlistId[index]}/tracks`;
 
-    const tracks = ((await response.json()) as SpotifyApi.CursorBasedPagingObject<
-      SpotifyApi.PlaylistTrackObject
-    >).items;
+      const response = await fetch(spotifyBaseUrl + requestUri, requestObject);
 
-    const trackResponse = await fetch(
+      const playListTracks = ((await response.json()) as SpotifyApi.CursorBasedPagingObject<
+        SpotifyApi.PlaylistTrackObject
+      >).items;
+
+
+      tracks = tracks.concat(playListTracks).slice(0,100);
+    }
+
+    const audioResponse = await fetch(
       spotifyBaseUrl +
         "audio-features?ids=" +
         tracks.map(track => track.track.id).join(","),
       requestObject
     );
+    trackResponse = ((await audioResponse.json()) as SpotifyApi.MultipleAudioFeaturesResponse)
+      .audio_features;
 
-    return ((await trackResponse.json()) as SpotifyApi.MultipleAudioFeaturesResponse).audio_features.map(
-      track => {
-        const trac = tracks.find(y => y.track.id === track.id);
-        return {
-          name: trac ? trac.track.name : "asd",
-          uri: track.uri,
-          tempo: track.tempo,
-          danceability: track.danceability,
-          loudness: track.loudness,
-          energy: track.energy * 100,
-          id: track.id
-        } as ITrack;
-      }
-    );
+    trackResponse.forEach(track => {
+      if (track === null) return {} as ITrack;
+      const trac = tracks.find(y => y.track && y.track.id === track.id);
+      listofTracks.push({
+        name: trac ? trac.track.name : "asd",
+        uri: track.uri,
+        tempo: track.tempo / 2,
+        danceability: track.danceability * 100,
+        loudness: track.loudness,
+        energy: track.energy * 100,
+        id: track.id
+      } as ITrack);
+    });
+    return listofTracks;
   },
   playTracks: (trackIds: string[]) => {
     let body = JSON.stringify({

@@ -42,7 +42,10 @@ const App: React.FunctionComponent<any> = () => {
   const [playerReady, setPlayerReady] = useState(false);
   const [playbackState, setPlaybackState] = useState<Spotify.PlaybackState>();
 
-  const [stressLevel, setStressLevel] = useState<number>(0);
+  const [tempo, setTempo] = useState<number>(0);
+  const [danceability, setDanceability] = useState<number>(0);
+  const [loudness, setLoudness] = useState<number>(0);
+  const [energy, setEnergy] = useState<number>(0);
 
   const spotifyService = getSpotifyService();
 
@@ -50,21 +53,24 @@ const App: React.FunctionComponent<any> = () => {
   const [availablePlayLists, setAvailablePlayLists] = useState<
     SpotifyApi.PlaylistObjectSimplified[]
   >([]);
-  const [selectedTracks, setSelectedTracks] = useState<ITrack[]>([]);
+  const [availableTracks, setSelectedTracks] = useState<ITrack[]>([]);
 
   const [selectedItem, setSelectedItem] = useState({} as ISelection);
 
   useEffect(() => {
     const load = async () =>
-      spotifyService.getPlaylists().then(x => setAvailablePlayLists(x));
+      spotifyService.getPlaylists().then(x => {
+        spotifyService.getPlaylistsTracks(x.map(x => x.id)).then(tracks => {
+          console.log(tracks);
+          setSelectedTracks(tracks);
+        });
+      });
+
     load();
   }, [token]);
 
   useEffect(() => {
     if (selectedItem.id) {
-      spotifyService
-        .getPlaylistTracks(selectedItem.id)
-        .then(tracks => setSelectedTracks(tracks));
     }
   }, [selectedItem]);
 
@@ -93,38 +99,48 @@ const App: React.FunctionComponent<any> = () => {
     }
   }, [playerReady]);
 
-  player = ((window as unknown) as any).player;
+  useEffect(() => {
+    const setBestTrack = availableTracks.reduce((current: any, next) => {
+      const score = (Math.abs(next.danceability - danceability) + Math.abs(next.tempo - tempo) + Math.abs(next.energy - energy) + Math.abs(next.loudness - loudness));
+      if(score < current.score) {
+        return {id: next.id, score};
+      } 
+      return current;
+      
+    }, {id: '', score: 99999})
+    console.log(availableTracks.find(x=> x.id === setBestTrack.id))
+    console.log(setBestTrack)
+  }, [tempo, danceability,loudness,energy])
 
+  player = ((window as unknown) as any).player;
   return (
     <Container>
-      <Dropdown isOpen={isOpen} toggle={() => setIsOpen(!isOpen)}>
-        <DropdownToggle caret>{selectedItem.name}</DropdownToggle>
-        <DropdownMenu>
-          {availablePlayLists &&
-            availablePlayLists.map((item, index) => (
-              <DropdownItem
-                key={index}
-                onClick={e => setSelectedItem({ name: item.name, id: item.id })}
-              >
-                {item.name}
-              </DropdownItem>
-            ))}
-        </DropdownMenu>
-      </Dropdown>
       {playbackState && playbackState.paused ? (
         <Button onClick={() => player.resume()}>play</Button>
       ) : (
         <Button onClick={() => player.pause()}>pause</Button>
       )}
       <div>
-        <p>Stressnivå</p>
-        <Slider onChange={value => setStressLevel(value)} min={0} max={100} />
+        <p>tempo</p>
+        <Slider onChange={value => setTempo(value)} min={0} max={100} />
+      </div>
+      <div>
+        <p>danceability</p>
+        <Slider onChange={value => setDanceability(value)} min={0} max={100} />
+      </div>
+      <div>
+        <p>loudness</p>
+        <Slider onChange={value => setLoudness(value)} min={-60} max={0} />
+      </div>
+      <div>
+        <p>energy</p>
+        <Slider onChange={value => setEnergy(value)} min={0} max={100} />
       </div>
       <br />
       <br />
-      {selectedTracks.length > 0 &&
-        selectedTracks
-          .filter(filterStressLevel => filterStressLevel.energy > stressLevel)
+      {availableTracks.length > 0 &&
+        availableTracks
+          .filter(filterStressLevel => filterStressLevel.energy > tempo)
           .map(track => (
             <>
               <br />
