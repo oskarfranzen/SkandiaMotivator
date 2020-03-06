@@ -1,18 +1,21 @@
-import { getSpotifyToken } from "./spotifyPlayer";
+import { getSpotifyToken, encodeQueryData } from "./spotifyPlayer";
 
 interface ISpotifyService {
   getPlaylists: () => Promise<SpotifyApi.PlaylistObjectSimplified[]>;
   getPlaylistTracks: (
     playlistId: string
   ) => Promise<SpotifyApi.AudioFeaturesObject[]>;
-  playTracks: (trackIds: string[]) => void
+  playTracks: (trackIds: string[]) => void;
 }
 
 const spotifyBaseUrl = "https://api.spotify.com/v1/";
 
 export const getSpotifyService = (): ISpotifyService => ({
   getPlaylists: async () => {
-    const response = await fetch(spotifyBaseUrl + "me/playlists", requestObject);
+    const response = await fetch(
+      spotifyBaseUrl + "me/playlists",
+      requestObject
+    );
     return ((await response.json()) as SpotifyApi.CursorBasedPagingObject<
       SpotifyApi.PlaylistObjectSimplified
     >).items;
@@ -22,10 +25,14 @@ export const getSpotifyService = (): ISpotifyService => ({
 
     const response = await fetch(spotifyBaseUrl + requestUri, requestObject);
 
-    const tracks = ((await response.json()) as SpotifyApi.CursorBasedPagingObject<SpotifyApi.PlaylistTrackObject>).items;
+    const tracks = ((await response.json()) as SpotifyApi.CursorBasedPagingObject<
+      SpotifyApi.PlaylistTrackObject
+    >).items;
 
     const trackResponse = await fetch(
-      spotifyBaseUrl + "audio-features?ids=" + tracks.map(track => track.track.id).join(","),
+      spotifyBaseUrl +
+        "audio-features?ids=" +
+        tracks.map(track => track.track.id).join(","),
       requestObject
     );
 
@@ -33,15 +40,21 @@ export const getSpotifyService = (): ISpotifyService => ({
       .audio_features;
   },
   playTracks: (trackIds: string[]) => {
-    let body = JSON.stringify({ uris: trackIds.map(x=> 'spotify:track:' + x) });
+    let body = JSON.stringify({
+      uris: trackIds.map(x => "spotify:track:" + x)
+    });
 
-    fetch(spotifyBaseUrl + `me/player/play?device_id=${localStorage.getItem('spotify_device_id')}`, {
-      method: 'put',
-      headers: new Headers({
-        Authorization: "Bearer " + getSpotifyToken().authToken
-      }),
-      body: body
-    })
+    fetch(
+      spotifyBaseUrl +
+        `me/player/play?${encodeQueryData({"device_id": localStorage.getItem("spotify_device_id") || ''})}`,
+      {
+        method: "put",
+        headers: new Headers({
+          Authorization: "Bearer " + getSpotifyToken().authToken
+        }),
+        body: body
+      }
+    );
   }
 });
 

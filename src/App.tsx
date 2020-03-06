@@ -7,27 +7,9 @@ import {
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
-  Button
+  Button,
+  Container
 } from "reactstrap";
-
-
-
-
-window.onSpotifyWebPlaybackSDKReady = () => {
-  const token = checkAuth().authToken;
-  const player = new Spotify.Player({
-    name: "Skandia Hackathon player",
-    getOAuthToken: cb => {
-      cb(token);
-    }
-  });
-  player.connect();
-  player.addListener('ready', ({ device_id }) => {
-    console.log('Ready with Device ID', device_id);
-    localStorage.setItem("spotify_device_id", device_id)
-});
-  (window as unknown as any).player = player;
-};
 
 interface ISelection {
   name: string;
@@ -35,15 +17,26 @@ interface ISelection {
 }
 
 const App: React.FunctionComponent<any> = () => {
-  const windowLocal = window as unknown as any;
+  let player: Spotify.SpotifyPlayer;
+  const windowLocal = (window as unknown) as any;
 
-  const[token, setToken] = useState(checkAuth().authToken)
+  window.onSpotifyWebPlaybackSDKReady = () => {
+    setPlayerReady(true);
+  };
+
+  const [token, setToken] = useState(checkAuth().authToken);
+  const [playerReady, setPlayerReady] = useState(false);
+  const [playbackState, setPlaybackState] = useState<Spotify.PlaybackState>();
 
   const spotifyService = getSpotifyService();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [availablePlayLists, setAvailablePlayLists] = useState<SpotifyApi.PlaylistObjectSimplified[]>([]);
-  const [selectedTracks, setSelectedTracks] = useState<SpotifyApi.AudioFeaturesObject[]>([]);
+  const [availablePlayLists, setAvailablePlayLists] = useState<
+    SpotifyApi.PlaylistObjectSimplified[]
+  >([]);
+  const [selectedTracks, setSelectedTracks] = useState<
+    SpotifyApi.AudioFeaturesObject[]
+  >([]);
 
   const [selectedItem, setSelectedItem] = useState({} as ISelection);
 
@@ -61,8 +54,31 @@ const App: React.FunctionComponent<any> = () => {
     }
   }, [selectedItem]);
 
+  useEffect(() => {
+    if (playerReady) {
+      const token = checkAuth().authToken;
+      (window as unknown as any).player = new Spotify.Player({
+        name: "Skandia Hackathon player",
+        getOAuthToken: cb => {
+          cb(token);
+        }
+      });
+      player = (window as unknown as any).player;
+      player.connect();
+      player.addListener("ready", ({ device_id }) => {
+        console.log("Ready with Device ID", device_id);
+        localStorage.setItem("spotify_device_id", device_id);
+      });
+      player.addListener('player_state_changed', (playbackState: Spotify.PlaybackState) => {
+        console.log(playbackState)
+        setPlaybackState(playbackState);
+      })
+    }
+  }, [playerReady]);
+
+
   return (
-    <div>
+    <Container>
       <Dropdown isOpen={isOpen} toggle={() => setIsOpen(!isOpen)}>
         <DropdownToggle caret>{selectedItem.name}</DropdownToggle>
         <DropdownMenu>
@@ -77,9 +93,13 @@ const App: React.FunctionComponent<any> = () => {
             ))}
         </DropdownMenu>
       </Dropdown>
-
-      {selectedTracks.length > 0 && selectedTracks.map(track => <Button onClick={() => spotifyService.playTracks([track.id])}>{track && track.uri || 'lol'}</Button>)}
-    </div>
+      {selectedTracks.length > 0 &&
+        selectedTracks.map(track => (
+          <Button onClick={() => spotifyService.playTracks([track.id])}>
+            {(track && track.uri) || "lol"}
+          </Button>
+        ))}
+    </Container>
   );
 };
 

@@ -38,7 +38,7 @@ export const checkAuth = (): IToken => {
   return token;
 };
 
-const encodeQueryData = (data: any) => {
+export const encodeQueryData = (data: any) => {
   const ret = [];
   if (!data) {
     return "";
