@@ -24,7 +24,9 @@ export const checkAuth = (): IToken => {
       .split("&")[0];
   if (authToken !== "") {
     localStorage.setItem(tokenLocalStorageKey, JSON.stringify({ authToken }));
+    window.location.reload();
   } else {
+    localStorage.clear();
     window.location.href =
       "https://accounts.spotify.com/authorize?" +
       encodeQueryData({
