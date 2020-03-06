@@ -6,8 +6,12 @@ import {
   Dropdown,
   DropdownItem,
   DropdownMenu,
-  DropdownToggle
+  DropdownToggle,
+  Button
 } from "reactstrap";
+
+
+
 
 window.onSpotifyWebPlaybackSDKReady = () => {
   const token = checkAuth().authToken;
@@ -18,6 +22,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
   });
   player.connect();
+  player.addListener('ready', ({ device_id }) => {
+    console.log('Ready with Device ID', device_id);
+    localStorage.setItem("spotify_device_id", device_id)
+});
+  (window as unknown as any).player = player;
 };
 
 interface ISelection {
@@ -26,42 +35,50 @@ interface ISelection {
 }
 
 const App: React.FunctionComponent<any> = () => {
+  const windowLocal = window as unknown as any;
+
+  const[token, setToken] = useState(checkAuth().authToken)
+
   const spotifyService = getSpotifyService();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [state, setState] = useState<SpotifyApi.PlaylistObjectSimplified[]>([]);
+  const [availablePlayLists, setAvailablePlayLists] = useState<SpotifyApi.PlaylistObjectSimplified[]>([]);
+  const [selectedTracks, setSelectedTracks] = useState<SpotifyApi.AudioFeaturesObject[]>([]);
 
   const [selectedItem, setSelectedItem] = useState({} as ISelection);
 
   useEffect(() => {
     const load = async () =>
-      spotifyService.getPlaylists().then(x => setState(x));
+      spotifyService.getPlaylists().then(x => setAvailablePlayLists(x));
     load();
-  }, [true]);
+  }, [token]);
 
   useEffect(() => {
-    spotifyService.getPlaylistTracks(selectedItem.id).then(x=> console.log(x))
+    if (selectedItem.id) {
+      spotifyService
+        .getPlaylistTracks(selectedItem.id)
+        .then(tracks => setSelectedTracks(tracks));
+    }
   }, [selectedItem]);
-  
 
   return (
     <div>
       <Dropdown isOpen={isOpen} toggle={() => setIsOpen(!isOpen)}>
         <DropdownToggle caret>{selectedItem.name}</DropdownToggle>
         <DropdownMenu>
-          {state &&
-            state.map((item, index) => (
+          {availablePlayLists &&
+            availablePlayLists.map((item, index) => (
               <DropdownItem
                 key={index}
-                onClick={e =>
-                  setSelectedItem({ name: item.name, id: item.id })
-                }
+                onClick={e => setSelectedItem({ name: item.name, id: item.id })}
               >
                 {item.name}
               </DropdownItem>
             ))}
         </DropdownMenu>
       </Dropdown>
+
+      {selectedTracks.length > 0 && selectedTracks.map(track => <Button onClick={() => spotifyService.playTracks([track.id])}>{track && track.uri || 'lol'}</Button>)}
     </div>
   );
 };

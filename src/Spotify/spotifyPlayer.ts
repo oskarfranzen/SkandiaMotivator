@@ -30,7 +30,8 @@ export const checkAuth = (): IToken => {
       encodeQueryData({
         client_id: clientId,
         response_type: "token",
-        redirect_uri: "http://localhost:3000/"
+        redirect_uri: "http://localhost:3000/",
+        scope: "streaming"
       });
     return {} as IToken;
   }
