@@ -57,25 +57,29 @@ const App: React.FunctionComponent<any> = () => {
   useEffect(() => {
     if (playerReady) {
       const token = checkAuth().authToken;
-      (window as unknown as any).player = new Spotify.Player({
+      ((window as unknown) as any).player = new Spotify.Player({
         name: "Skandia Hackathon player",
         getOAuthToken: cb => {
           cb(token);
         }
       });
-      player = (window as unknown as any).player;
+      player = ((window as unknown) as any).player;
       player.connect();
       player.addListener("ready", ({ device_id }) => {
         console.log("Ready with Device ID", device_id);
         localStorage.setItem("spotify_device_id", device_id);
       });
-      player.addListener('player_state_changed', (playbackState: Spotify.PlaybackState) => {
-        console.log(playbackState)
-        setPlaybackState(playbackState);
-      })
+      player.addListener(
+        "player_state_changed",
+        (playbackState: Spotify.PlaybackState) => {
+          console.log(playbackState);
+          setPlaybackState(playbackState);
+        }
+      );
     }
   }, [playerReady]);
 
+  player = ((window as unknown) as any).player;
 
   return (
     <Container>
@@ -93,6 +97,13 @@ const App: React.FunctionComponent<any> = () => {
             ))}
         </DropdownMenu>
       </Dropdown>
+      {playbackState && playbackState.paused ? (
+        <Button onClick={() => player.resume()}>play</Button>
+      ) : (
+        <Button onClick={() => player.pause()}>pause</Button>
+      )}
+      <br />
+      <br />
       {selectedTracks.length > 0 &&
         selectedTracks.map(track => (
           <Button onClick={() => spotifyService.playTracks([track.id])}>
