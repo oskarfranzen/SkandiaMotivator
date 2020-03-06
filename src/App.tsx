@@ -16,6 +16,16 @@ interface ISelection {
   id: string;
 }
 
+export interface ITrack {
+  name: string;
+  uri: string;
+  tempo: number;
+  danceability: number;
+  loudness: number;
+  energy: number;
+  id: string;
+}
+
 const App: React.FunctionComponent<any> = () => {
   let player: Spotify.SpotifyPlayer;
   const windowLocal = (window as unknown) as any;
@@ -34,9 +44,7 @@ const App: React.FunctionComponent<any> = () => {
   const [availablePlayLists, setAvailablePlayLists] = useState<
     SpotifyApi.PlaylistObjectSimplified[]
   >([]);
-  const [selectedTracks, setSelectedTracks] = useState<
-    SpotifyApi.AudioFeaturesObject[]
-  >([]);
+  const [selectedTracks, setSelectedTracks] = useState<ITrack[]>([]);
 
   const [selectedItem, setSelectedItem] = useState({} as ISelection);
 
@@ -106,9 +114,12 @@ const App: React.FunctionComponent<any> = () => {
       <br />
       {selectedTracks.length > 0 &&
         selectedTracks.map(track => (
-          <Button onClick={() => spotifyService.playTracks([track.id])}>
-            {(track && track.uri) || "lol"}
-          </Button>
+          <>
+            <br />
+            <Button onClick={() => spotifyService.playTracks([track.id])}>
+              {(track && track.name) || "lol"}
+            </Button>
+          </>
         ))}
     </Container>
   );

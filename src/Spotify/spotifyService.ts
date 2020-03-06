@@ -1,10 +1,9 @@
 import { getSpotifyToken, encodeQueryData } from "./spotifyPlayer";
+import { ITrack } from "../App";
 
 interface ISpotifyService {
   getPlaylists: () => Promise<SpotifyApi.PlaylistObjectSimplified[]>;
-  getPlaylistTracks: (
-    playlistId: string
-  ) => Promise<SpotifyApi.AudioFeaturesObject[]>;
+  getPlaylistTracks: (playlistId: string) => Promise<ITrack[]>;
   playTracks: (trackIds: string[]) => void;
 }
 
@@ -36,8 +35,20 @@ export const getSpotifyService = (): ISpotifyService => ({
       requestObject
     );
 
-    return ((await trackResponse.json()) as SpotifyApi.MultipleAudioFeaturesResponse)
-      .audio_features;
+    return ((await trackResponse.json()) as SpotifyApi.MultipleAudioFeaturesResponse).audio_features.map(
+      track => {
+        const trac = tracks.find(y => y.track.id === track.id);
+        return {
+          name: trac ? trac.track.name : "asd",
+          uri: track.uri,
+          tempo: track.tempo,
+          danceability: track.danceability,
+          loudness: track.loudness,
+          energy: track.energy,
+          id: track.id
+        } as ITrack;
+      }
+    );
   },
   playTracks: (trackIds: string[]) => {
     let body = JSON.stringify({
@@ -46,7 +57,9 @@ export const getSpotifyService = (): ISpotifyService => ({
 
     fetch(
       spotifyBaseUrl +
-        `me/player/play?${encodeQueryData({"device_id": localStorage.getItem("spotify_device_id") || ''})}`,
+        `me/player/play?${encodeQueryData({
+          device_id: localStorage.getItem("spotify_device_id") || ""
+        })}`,
       {
         method: "put",
         headers: new Headers({
