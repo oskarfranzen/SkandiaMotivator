@@ -35,13 +35,13 @@ export const getSpotifyService = (): ISpotifyService => ({
       >).items;
 
 
-      tracks = tracks.concat(playListTracks).slice(0,100);
+      tracks = tracks.concat(playListTracks.slice(0,10));
     }
 
     const audioResponse = await fetch(
       spotifyBaseUrl +
         "audio-features?ids=" +
-        tracks.map(track => track.track.id).join(","),
+        tracks.slice(0,100).map(track => track.track.id).join(","),
       requestObject
     );
     trackResponse = ((await audioResponse.json()) as SpotifyApi.MultipleAudioFeaturesResponse)
@@ -53,7 +53,7 @@ export const getSpotifyService = (): ISpotifyService => ({
       listofTracks.push({
         name: trac ? trac.track.name : "asd",
         uri: track.uri,
-        tempo: track.tempo / 2,
+        tempo: (track.tempo / 200) * 100,
         danceability: track.danceability * 100,
         loudness: track.loudness,
         energy: track.energy * 100,

@@ -9,7 +9,10 @@ import {
   DropdownToggle,
   Button,
   Container,
-  Row
+  Row,
+  CardHeader,
+  CardBody,
+  Card
 } from "reactstrap";
 import ReactSlider from "react-slider";
 import Slider, { Range } from "rc-slider";
@@ -47,32 +50,21 @@ const App: React.FunctionComponent<any> = () => {
   const [loudness, setLoudness] = useState<number>(0);
   const [energy, setEnergy] = useState<number>(0);
 
+  const [bestTrack, setBestTrack] = useState<ITrack>();
+
   const spotifyService = getSpotifyService();
-
-  const [isOpen, setIsOpen] = useState(false);
-  const [availablePlayLists, setAvailablePlayLists] = useState<
-    SpotifyApi.PlaylistObjectSimplified[]
-  >([]);
-  const [availableTracks, setSelectedTracks] = useState<ITrack[]>([]);
-
-  const [selectedItem, setSelectedItem] = useState({} as ISelection);
+  const [availableTracks, setAvailableTracks] = useState<ITrack[]>([]);
 
   useEffect(() => {
     const load = async () =>
       spotifyService.getPlaylists().then(x => {
         spotifyService.getPlaylistsTracks(x.map(x => x.id)).then(tracks => {
-          console.log(tracks);
-          setSelectedTracks(tracks);
+          setAvailableTracks(tracks);
         });
       });
 
     load();
   }, [token]);
-
-  useEffect(() => {
-    if (selectedItem.id) {
-    }
-  }, [selectedItem]);
 
   useEffect(() => {
     if (playerReady) {
@@ -100,17 +92,24 @@ const App: React.FunctionComponent<any> = () => {
   }, [playerReady]);
 
   useEffect(() => {
-    const setBestTrack = availableTracks.reduce((current: any, next) => {
-      const score = (Math.abs(next.danceability - danceability) + Math.abs(next.tempo - tempo) + Math.abs(next.energy - energy) + Math.abs(next.loudness - loudness));
-      if(score < current.score) {
-        return {id: next.id, score};
-      } 
-      return current;
-      
-    }, {id: '', score: 99999})
-    console.log(availableTracks.find(x=> x.id === setBestTrack.id))
-    console.log(setBestTrack)
-  }, [tempo, danceability,loudness,energy])
+    const bestTrack = availableTracks.reduce(
+      (current: { score: number; track: ITrack | null }, next) => {
+        const score =
+          Math.abs(next.danceability - danceability) +
+          (Math.abs(next.tempo - tempo) / 2) + //Tempo should have lower weight
+          Math.abs(next.energy - energy) +
+          Math.abs(next.loudness - loudness);
+        if (score < current.score) {
+          return { score, track: next };
+        }
+        return current;
+      },
+      { score: 99999, track: null }
+    );
+    if (bestTrack.track) {
+      setBestTrack(bestTrack.track);
+    }
+  }, [tempo, danceability, loudness, energy]);
 
   player = ((window as unknown) as any).player;
   return (
@@ -138,17 +137,12 @@ const App: React.FunctionComponent<any> = () => {
       </div>
       <br />
       <br />
-      {availableTracks.length > 0 &&
-        availableTracks
-          .filter(filterStressLevel => filterStressLevel.energy > tempo)
-          .map(track => (
-            <>
-              <br />
-              <Button onClick={() => spotifyService.playTracks([track.id])}>
-                {(track && track.name) || "lol"}
-              </Button>
-            </>
-          ))}
+      {bestTrack && (
+        <Card>
+          <CardHeader>{bestTrack.name}</CardHeader>
+          <CardBody>{bestTrack.tempo}</CardBody>
+        </Card>
+      )}
     </Container>
   );
 };
