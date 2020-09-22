@@ -96,7 +96,7 @@ const App: React.FunctionComponent<any> = () => {
       (current: { score: number; track: ITrack | null }, next) => {
         const score =
           Math.abs(next.danceability - danceability) +
-          (Math.abs(next.tempo - tempo) / 2) + //Tempo should have lower weight
+          Math.abs(next.tempo - tempo) / 2 + //Tempo should have lower weight
           Math.abs(next.energy - energy) +
           Math.abs(next.loudness - loudness);
         if (score < current.score) {
@@ -110,6 +110,8 @@ const App: React.FunctionComponent<any> = () => {
       setBestTrack(bestTrack.track);
     }
   }, [tempo, danceability, loudness, energy]);
+
+  //TODO: Add debounced automatic playback of selected track
 
   player = ((window as unknown) as any).player;
   return (
